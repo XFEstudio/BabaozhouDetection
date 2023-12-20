@@ -1,0 +1,88 @@
+﻿{
+  "Scenario": "ObjectDetection",
+  "DataSource": {
+    "Type": "Vott",
+    "Version": 1,
+    "FilePath": "C:\\Users\\XFEstudio\\Desktop\\work\\MLearning\\ImageDetectionTest\\vott-json-export\\ImageDetectionTest-export.json"
+  },
+  "Environment": {
+    "Type": "LocalGPU",
+    "Version": 1
+  },
+  "RunHistory": {
+    "Version": 3,
+    "Type": "Result",
+    "Trials": [
+      {
+        "Version": 1,
+        "Type": "Trial",
+        "TrainerName": "ObjectDetectionMulti",
+        "Score": 0.62795579433441162,
+        "RuntimeInSeconds": 166.534,
+        "Parameter": {
+          "_SCHEMA_": "e0 * e1 * e2 * e3",
+          "e0": {
+            "OutputColumnName": "Labels",
+            "InputColumnName": "Labels",
+            "AddKeyValueAnnotationsAsText": false
+          },
+          "e1": {
+            "OutputColumnName": "Image",
+            "InputColumnName": "Image",
+            "ImageHeight": 600,
+            "ImageWidth": 800,
+            "CropAnchor": "Center",
+            "Resizing": "IsoPad"
+          },
+          "e2": {
+            "LabelColumnName": "Labels",
+            "PredictedLabelColumnName": "PredictedLabel",
+            "PredictedBoundingBoxColumnName": "PredictedBoundingBoxes",
+            "BoundingBoxColumnName": "Box",
+            "ImageColumnName": "Image",
+            "ScoreColumnName": "score",
+            "MaxEpoch": 5,
+            "InitLearningRate": 1.0,
+            "WeightDecay": 0.0,
+            "IOUThreshold": 0.5,
+            "ScoreThreshold": 0.34999999403953552
+          },
+          "e3": {
+            "OutputColumnName": "PredictedLabel",
+            "InputColumnName": "PredictedLabel"
+          }
+        }
+      }
+    ],
+    "Estimators": {
+      "e0": "MapValueToKey",
+      "e1": "ResizeImages",
+      "e2": "ObjectDetectionMulti",
+      "e3": "MapKeyToValue"
+    },
+    "Schema": "e0 * e1 * e2 * e3",
+    "MetricName": "mAP50_95",
+    "ModelFilePath": "C:\\Users\\XFEstudio\\Desktop\\work\\C#\\OtherProject\\TestConsole_80\\TestConsole_ImageDetection\\ImageDetectionTest.mlnet"
+  },
+  "Type": "TrainingConfig",
+  "Version": 4,
+  "TrainingOption": {
+    "Version": 0,
+    "Type": "ObjectDetectionTrainingOption",
+    "TrainingTime": 2147483647,
+    "Epoch": 5,
+    "ScoreThreshold": 0.35,
+    "IOUThreshold": 0.5,
+    "ValidationOption": {
+      "Version": 0,
+      "Type": "TrainValidateSplitValidationOption",
+      "SplitRatio": 0.2
+    },
+    "ResizeOption": {
+      "Version": 0,
+      "Type": "Resize",
+      "Width": 800,
+      "Height": 600
+    }
+  }
+}
