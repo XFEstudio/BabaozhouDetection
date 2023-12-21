@@ -12,24 +12,27 @@ public partial class MainForm : Form
     public static bool EngineInitialized { get; private set; }
     public bool CameraMode { get; set; }
     public string SelectedImagePath { get; set; } = string.Empty;
+    public int SelectedCameraIndex { get; set; } = 0;
     public Image CurrentCameraImage { get; private set; }
-    private FilterInfoCollection videoDevices;
+    private readonly FilterInfoCollection videoDevices;
     private VideoCaptureDevice videoSource;
     public MainForm()
     {
         InitializeComponent();
+        videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
+        for (int i = 0; i < videoDevices.Count; i++)
+        {
+            ShowConsoleMessage($"检测到摄像头设备[{i}]：{videoDevices[i].Name}");
+            Thread.Sleep(500);
+            cameraPickComboBox.Items.Add(videoDevices[i].Name);
+        }
+        cameraPickComboBox.SelectedIndex = cameraPickComboBox.Items.Count - 1;
         Task.Run(() =>
         {
             ShowConsoleMessage("正在初始化引擎......");
             ImageDetectionTest.InitializeEngine();
             EngineInitialized = true;
             ShowConsoleMessage("引擎初始化完成！", Color.Green);
-            videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
-            for (int i = 0; i < videoDevices.Count; i++)
-            {
-                ShowConsoleMessage($"检测到摄像头设备[{i}]：{videoDevices[i].Name}");
-                Thread.Sleep(500);
-            }
         });
     }
 
@@ -41,7 +44,7 @@ public partial class MainForm : Form
 
     public static Stream ImageToStream(Image image, ImageFormat format)
     {
-        MemoryStream stream = new MemoryStream();
+        MemoryStream stream = new();
         image.Save(stream, format);
         stream.Seek(0, SeekOrigin.Begin);
         return stream;
@@ -49,11 +52,15 @@ public partial class MainForm : Form
 
     public void ShowConsoleMessage(string text, Color color)
     {
-        if (Loaded)
+        try
         {
-            Invoke(() => consoleLabel.ForeColor = color);
-            Invoke(() => consoleLabel.Text = text);
+            if (Loaded)
+            {
+                Invoke(() => consoleLabel.ForeColor = color);
+                Invoke(() => consoleLabel.Text = text);
+            }
         }
+        catch { }
     }
 
     public void ShowConsoleMessage(string text)
@@ -69,10 +76,11 @@ public partial class MainForm : Form
         });
     }
 
-    private void DetectBottle(Image image)
+    private void DetectBottle(Image originImage)
     {
         try
         {
+            var image = (Bitmap)originImage.Clone();
             ShowConsoleMessage("正在检测...");
             if (image is null)
             {
@@ -180,34 +188,56 @@ public partial class MainForm : Form
 
     private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
     {
-        if (videoSource is not null && videoSource.IsRunning)
-            videoSource.Stop();
+        try
+        {
+            if (videoSource is not null && videoSource.IsRunning)
+                videoSource.SignalToStop()  ;
+        }
+        catch (Exception ex)
+        {
+            ShowConsoleMessage(ex.Message, Color.Red);
+            Application.Exit();
+        }
     }
 
     private void StartCaptureButton_Click(object sender, EventArgs e)
     {
-        if (CameraMode)
+        try
         {
-            CameraMode = false;
-            startCaptureButton.Text = "打开摄像头";
-            videoSource.NewFrame -= VideoSource_NewFrame;
-            videoSource.VideoSourceError -= VideoSource_VideoSourceError;
-            videoSource.Stop();
-        }
-        else
-        {
-            CameraMode = true;
-            startCaptureButton.Text = "关闭摄像头";
-            videoSource ??= new VideoCaptureDevice(videoDevices[1].MonikerString);
-            videoSource.NewFrame += VideoSource_NewFrame;
-            videoSource.VideoSourceError += VideoSource_VideoSourceError;
-            videoSource.Start();
-            Task.Run(() =>
+            if (CameraMode)
             {
-                while (CameraMode)
-                    if (CurrentCameraImage is not null)
-                        DetectBottle(CurrentCameraImage);
-            });
+                CameraMode = false;
+                startCaptureButton.Text = "打开摄像头";
+                videoSource.NewFrame -= VideoSource_NewFrame;
+                videoSource.VideoSourceError -= VideoSource_VideoSourceError;
+                videoSource.SignalToStop();
+            }
+            else
+            {
+                if (cameraPickComboBox.SelectedIndex >= 0)
+                {
+                    CameraMode = true;
+                    startCaptureButton.Text = "关闭摄像头";
+                    videoSource = new VideoCaptureDevice(videoDevices[cameraPickComboBox.SelectedIndex].MonikerString);
+                    videoSource.NewFrame += VideoSource_NewFrame;
+                    videoSource.VideoSourceError += VideoSource_VideoSourceError;
+                    videoSource.Start();
+                    Task.Run(() =>
+                    {
+                        while (CameraMode)
+                            if (CurrentCameraImage is not null)
+                                DetectBottle(CurrentCameraImage);
+                    });
+                }
+                else
+                {
+                    ShowConsoleMessage("未选择摄像头！", Color.Red);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowConsoleMessage(ex.Message, Color.Red);
         }
     }
 
