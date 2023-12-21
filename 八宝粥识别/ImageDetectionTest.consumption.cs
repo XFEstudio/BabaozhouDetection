@@ -71,7 +71,7 @@ namespace TestConsole_ImageDetection
             var mlContext = new MLContext
             {
                 GpuDeviceId = 0,
-                FallbackToCpu = false
+                FallbackToCpu = true
             };
             ITransformer mlModel = mlContext.Model.Load(MLNetModelPath, out var _);
             return mlContext.Model.CreatePredictionEngine<ModelInput, ModelOutput>(mlModel);
