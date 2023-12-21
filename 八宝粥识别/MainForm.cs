@@ -70,9 +70,9 @@ public partial class MainForm : Form
                 var boxes = result.PredictedBoundingBoxes.Chunk(4)
                                                          .Select(x => new { XTop = x[0], YTop = x[1], XBottom = x[2], YBottom = x[3] })
                                                          .Zip(result.Score, (a, b) => new { Box = a, Score = b });
+                using var graphics = Graphics.FromImage(originImage);
                 foreach (var box in boxes)
                 {
-                    using var graphics = Graphics.FromImage(originImage);
                     #region 获取矩形位置
                     int x = (int)box.Box.XTop;
                     int y = (int)box.Box.YTop;
