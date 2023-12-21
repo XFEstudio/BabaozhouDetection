@@ -33,6 +33,7 @@
             detectActionButton = new Button();
             selectPictureButton = new Button();
             openImageFileDialog = new OpenFileDialog();
+            consoleLabel = new Label();
             ((System.ComponentModel.ISupportInitialize)cameraPictureBox).BeginInit();
             ((System.ComponentModel.ISupportInitialize)detectedPictureBox).BeginInit();
             SuspendLayout();
@@ -67,7 +68,7 @@
             // 
             // selectPictureButton
             // 
-            selectPictureButton.Location = new Point(304, 819);
+            selectPictureButton.Location = new Point(304, 764);
             selectPictureButton.Name = "selectPictureButton";
             selectPictureButton.Size = new Size(904, 51);
             selectPictureButton.TabIndex = 3;
@@ -80,17 +81,29 @@
             openImageFileDialog.Filter = "图片文件|*.*";
             openImageFileDialog.Title = "选择要检测八宝粥的图片";
             // 
+            // consoleLabel
+            // 
+            consoleLabel.BackColor = Color.FromArgb(210, 210, 210);
+            consoleLabel.ForeColor = SystemColors.ActiveCaptionText;
+            consoleLabel.Location = new Point(1, 849);
+            consoleLabel.Name = "consoleLabel";
+            consoleLabel.Size = new Size(1481, 34);
+            consoleLabel.TabIndex = 4;
+            consoleLabel.Text = "NoOutPutInfo";
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(11F, 24F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1484, 882);
+            Controls.Add(consoleLabel);
             Controls.Add(selectPictureButton);
             Controls.Add(detectActionButton);
             Controls.Add(detectedPictureBox);
             Controls.Add(cameraPictureBox);
             Name = "MainForm";
             Text = "八宝粥检测";
+            Load += MainForm_Load;
             ((System.ComponentModel.ISupportInitialize)cameraPictureBox).EndInit();
             ((System.ComponentModel.ISupportInitialize)detectedPictureBox).EndInit();
             ResumeLayout(false);
@@ -103,5 +116,6 @@
         private Button detectActionButton;
         private Button selectPictureButton;
         private OpenFileDialog openImageFileDialog;
+        private Label consoleLabel;
     }
 }

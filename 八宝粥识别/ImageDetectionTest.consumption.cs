@@ -59,14 +59,20 @@ namespace TestConsole_ImageDetection
 
         private static string MLNetModelPath = Path.GetFullPath("ImageDetectionTest.mlnet");
 
-        public static readonly Lazy<PredictionEngine<ModelInput, ModelOutput>> PredictEngine = new Lazy<PredictionEngine<ModelInput, ModelOutput>>(() => CreatePredictEngine(), true);
+        public static Lazy<PredictionEngine<ModelInput, ModelOutput>> PredictEngine { get; private set; } = new Lazy<PredictionEngine<ModelInput, ModelOutput>>(CreatePredictEngine, true);
+        private static PredictionEngine<ModelInput, ModelOutput> predEngine;
 
-
+        public static void InitializeEngine()
+        {
+            predEngine = PredictEngine.Value;
+        }
         private static PredictionEngine<ModelInput, ModelOutput> CreatePredictEngine()
         {
-            var mlContext = new MLContext();
-            mlContext.GpuDeviceId = 0;
-            mlContext.FallbackToCpu = false;
+            var mlContext = new MLContext
+            {
+                GpuDeviceId = 0,
+                FallbackToCpu = false
+            };
             ITransformer mlModel = mlContext.Model.Load(MLNetModelPath, out var _);
             return mlContext.Model.CreatePredictionEngine<ModelInput, ModelOutput>(mlModel);
         }
@@ -78,7 +84,6 @@ namespace TestConsole_ImageDetection
         /// <returns><seealso cref=" ModelOutput"/></returns>
         public static ModelOutput Predict(ModelInput input)
         {
-            var predEngine = PredictEngine.Value;
             var output = predEngine.Predict(input);
 
             CalculateAspectAndOffset(input.Image.Width, input.Image.Height, TrainingImageWidth, TrainingImageHeight, out float xOffset, out float yOffset, out float aspect);

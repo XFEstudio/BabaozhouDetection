@@ -5,11 +5,34 @@ namespace 八宝粥识别;
 
 public partial class MainForm : Form
 {
+    public bool Loaded { get; private set; }
+    public static bool EngineInitialized { get; private set; }
     public bool CameraMode { get; set; }
     public string SelectedImagePath { get; set; } = string.Empty;
     public MainForm()
     {
         InitializeComponent();
+        Task.Run(() =>
+        {
+            ShowConsoleMessage("正在初始化引擎......");
+            ImageDetectionTest.InitializeEngine();
+            EngineInitialized = true;
+            ShowConsoleMessage("引擎初始化完成！", Color.Green);
+        });
+    }
+
+    public void ShowConsoleMessage(string text, Color color)
+    {
+        if (Loaded)
+        {
+            Invoke(() => consoleLabel.ForeColor = color);
+            Invoke(() => consoleLabel.Text = text);
+        }
+    }
+
+    public void ShowConsoleMessage(string text)
+    {
+        ShowConsoleMessage(text, Color.Black);
     }
 
     private void DetectActionButton_Click(object sender, EventArgs e)
@@ -18,9 +41,17 @@ public partial class MainForm : Form
         {
             try
             {
+                ShowConsoleMessage("正在检测...");
                 if (SelectedImagePath == string.Empty)
                 {
+                    ShowConsoleMessage("无图像传入！", Color.Red);
                     MessageBox.Show("无图像传入");
+                    return;
+                }
+                if (!EngineInitialized)
+                {
+                    ShowConsoleMessage("无图像传入！", Color.Red);
+                    MessageBox.Show("视觉识别引擎未初始化完成");
                     return;
                 }
                 var originImage = Image.FromFile(SelectedImagePath);
@@ -30,6 +61,12 @@ public partial class MainForm : Form
                     Image = image
                 };
                 var result = ImageDetectionTest.Predict(sampleData);
+                if (result is null || result.Score is null)
+                {
+                    detectedPictureBox.Image = originImage;
+                    ShowConsoleMessage("未检测到目标");
+                    return;
+                }
                 var boxes = result.PredictedBoundingBoxes.Chunk(4)
                                                          .Select(x => new { XTop = x[0], YTop = x[1], XBottom = x[2], YBottom = x[3] })
                                                          .Zip(result.Score, (a, b) => new { Box = a, Score = b });
@@ -58,18 +95,31 @@ public partial class MainForm : Form
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.ToString());
+                ShowConsoleMessage($"错误信息：{ex.Message}", Color.Red);
             }
+            ShowConsoleMessage("检测完成！");
         });
     }
 
     private void SelectPictureButton_Click(object sender, EventArgs e)
     {
-        if (openImageFileDialog.ShowDialog() == DialogResult.OK)
+        try
         {
-            SelectedImagePath = openImageFileDialog.FileName;
+            if (openImageFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                SelectedImagePath = openImageFileDialog.FileName;
+                ShowConsoleMessage($"已选择图片：{SelectedImagePath}");
+                cameraPictureBox.Image = Image.FromFile(SelectedImagePath);
+            }
+            else
+            {
+                ShowConsoleMessage("未选择图片");
+            }
         }
-        cameraPictureBox.Image = Image.FromFile(SelectedImagePath);
+        catch (Exception ex)
+        {
+            ShowConsoleMessage($"错误信息：{ex.Message}", Color.Red);
+        }
     }
 
     private static Color GetTransparentColorForScore(float score)
@@ -85,5 +135,14 @@ public partial class MainForm : Form
             return Color.Yellow;
         else
             return Color.Red;
+    }
+
+    private void MainForm_Load(object sender, EventArgs e)
+    {
+        Loaded = true;
+        if (EngineInitialized)
+            ShowConsoleMessage("引擎初始化完成！", Color.Green);
+        else
+            ShowConsoleMessage("正在初始化引擎......");
     }
 }

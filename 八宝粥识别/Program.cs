@@ -1,3 +1,5 @@
+using TestConsole_ImageDetection;
+
 namespace 八宝粥识别
 {
     internal static class Program
