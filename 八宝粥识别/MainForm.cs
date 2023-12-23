@@ -3,22 +3,25 @@ using AForge.Video.DirectShow;
 using Microsoft.ML.Data;
 using System.Drawing.Imaging;
 using TestConsole_ImageDetection;
+using XFE各类拓展.NetCore.XFECode;
 
 namespace 八宝粥识别;
 
 public partial class MainForm : Form
 {
+    public static MainForm? CurrentForm { get; set; }
     public bool Loaded { get; private set; }
     public static bool EngineInitialized { get; private set; }
     public bool CameraMode { get; set; }
     public string SelectedImagePath { get; set; } = string.Empty;
     public int SelectedCameraIndex { get; set; } = 0;
-    public Image CurrentCameraImage { get; private set; }
+    public Image? CurrentCameraImage { get; private set; }
     private readonly FilterInfoCollection videoDevices;
-    private VideoCaptureDevice videoSource;
+    private VideoCaptureDevice videoSource = new();
     public MainForm()
     {
         InitializeComponent();
+        CurrentForm = this;
         videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
         for (int i = 0; i < videoDevices.Count; i++)
         {
@@ -54,11 +57,13 @@ public partial class MainForm : Form
     {
         try
         {
+            var log = $"[{DateTime.Now:HH:mm:ss}] {text}";
             if (Loaded)
             {
                 Invoke(() => consoleLabel.ForeColor = color);
-                Invoke(() => consoleLabel.Text = text);
+                Invoke(() => consoleLabel.Text = log);
             }
+            ConsoleLogForm.Log.Add(log);
         }
         catch { }
     }
@@ -72,17 +77,19 @@ public partial class MainForm : Form
     {
         Task.Run(() =>
         {
-            DetectBottle(CurrentCameraImage);
+            ShowConsoleMessage("正在检测...");
+            if (CameraMode)
+                DetectBottle(CurrentCameraImage);
+            else
+                DetectBottle(Image.FromFile(SelectedImagePath));
         });
     }
 
-    private void DetectBottle(Image originImage)
+    private void DetectBottle(Image? originImage)
     {
         try
         {
-            var image = (Bitmap)originImage.Clone();
-            ShowConsoleMessage("正在检测...");
-            if (image is null)
+            if (originImage?.Clone() is not Bitmap image)
             {
                 ShowConsoleMessage("无图像传入！", Color.Red);
                 if (!CameraMode)
@@ -101,11 +108,12 @@ public partial class MainForm : Form
             {
                 Image = detectImage
             };
-            var result = ImageDetectionTest.Predict(sampleData);
+            ImageDetectionTest.ModelOutput result = new();
+            var runTime = XFECode.CTime(() => result = ImageDetectionTest.Predict(sampleData));
             if (result is null || result.Score is null)
             {
                 detectedPictureBox.Image = image;
-                ShowConsoleMessage("未检测到目标");
+                ShowConsoleMessage($"未检测到目标\t用时：{(runTime.TotalSeconds > 1 ? $"{runTime.TotalSeconds:F2}秒" : $"{runTime.TotalMilliseconds:F2}毫秒"):F2}");
                 return;
             }
             var boxes = result.PredictedBoundingBoxes.Chunk(4)
@@ -127,24 +135,29 @@ public partial class MainForm : Form
                 var borderPen = new Pen(GetColorForScore(box.Score), borderThickness);
                 graphics.FillRectangle(fillBrush, x, y, width, height);
                 graphics.DrawRectangle(borderPen, x, y, width, height);
-                var confidenceText = $"相似度: {box.Score:F2}";
+                var confidenceText = $"匹配度: {box.Score:F2}";
                 SizeF textSize = graphics.MeasureString(confidenceText, font);
                 graphics.FillRectangle(new SolidBrush(GetColorForScore(box.Score)), x - borderThickness / 2, y - textSize.Height - 5, textSize.Width, textSize.Height);
                 graphics.DrawString(confidenceText, font, Brushes.White, x - borderThickness / 2, y - textSize.Height - 5);
             }
             Invoke(() => detectedPictureBox.Image = image);
+            ShowConsoleMessage($"检测到目标数：{boxes.Count()}\t用时：{(runTime.TotalSeconds > 1 ? $"{runTime.TotalSeconds:F2}秒" : $"{runTime.TotalMilliseconds:F2}毫秒"):F2}");
         }
         catch (Exception ex)
         {
             ShowConsoleMessage($"错误信息：{ex.Message}", Color.Red);
         }
-        ShowConsoleMessage("检测完成！");
     }
 
     private void SelectPictureButton_Click(object sender, EventArgs e)
     {
         try
         {
+            if (CameraMode)
+            {
+                MessageBox.Show("请先关闭摄像头！");
+                ShowConsoleMessage("摄像头运行中，无法选择图片！", Color.Red);
+            }
             if (openImageFileDialog.ShowDialog() == DialogResult.OK)
             {
                 SelectedImagePath = openImageFileDialog.FileName;
@@ -191,7 +204,7 @@ public partial class MainForm : Form
         try
         {
             if (videoSource is not null && videoSource.IsRunning)
-                videoSource.SignalToStop()  ;
+                videoSource.SignalToStop();
         }
         catch (Exception ex)
         {
@@ -222,6 +235,7 @@ public partial class MainForm : Form
                     videoSource.NewFrame += VideoSource_NewFrame;
                     videoSource.VideoSourceError += VideoSource_VideoSourceError;
                     videoSource.Start();
+                    ShowConsoleMessage("正在检测...");
                     Task.Run(() =>
                     {
                         while (CameraMode)
@@ -237,12 +251,30 @@ public partial class MainForm : Form
         }
         catch (Exception ex)
         {
-            ShowConsoleMessage(ex.Message, Color.Red);
+            ShowConsoleMessage($"{ex.Message}\t行号：{ex.StackTrace}", Color.Red);
         }
     }
 
     private void VideoSource_VideoSourceError(object sender, VideoSourceErrorEventArgs eventArgs)
     {
         ShowConsoleMessage(eventArgs.Description, Color.Red);
+    }
+
+    private void CameraPickComboBox_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (CameraMode)
+        {
+            videoSource.SignalToStop();
+            videoSource = new VideoCaptureDevice(videoDevices[cameraPickComboBox.SelectedIndex].MonikerString);
+            videoSource.NewFrame += VideoSource_NewFrame;
+            videoSource.VideoSourceError += VideoSource_VideoSourceError;
+            videoSource.Start();
+        }
+    }
+
+    private void ShowLogButton_Click(object sender, EventArgs e)
+    {
+        ConsoleLogForm consoleLogForm = new();
+        consoleLogForm.Show();
     }
 }

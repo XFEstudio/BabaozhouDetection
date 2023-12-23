@@ -15,6 +15,7 @@
 		<PackageReference Include="Microsoft.ML.ImageAnalytics" Version="3.0.0-preview.23266.6" />
 		<PackageReference Include="Microsoft.ML.TorchSharp" Version="0.21.0-preview.23266.6" />
 		<PackageReference Include="TorchSharp-cuda-windows" Version="0.99.5" />
+		<PackageReference Include="XFE各类拓展.NetCore" Version="1.2.3" />
 	</ItemGroup>
 
 </Project>

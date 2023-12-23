@@ -36,12 +36,14 @@
             consoleLabel = new Label();
             startCaptureButton = new Button();
             cameraPickComboBox = new ComboBox();
+            showLogButton = new Button();
             ((System.ComponentModel.ISupportInitialize)cameraPictureBox).BeginInit();
             ((System.ComponentModel.ISupportInitialize)detectedPictureBox).BeginInit();
             SuspendLayout();
             // 
             // cameraPictureBox
             // 
+            cameraPictureBox.BackColor = SystemColors.ActiveBorder;
             cameraPictureBox.Location = new Point(29, 37);
             cameraPictureBox.Name = "cameraPictureBox";
             cameraPictureBox.Size = new Size(628, 551);
@@ -51,6 +53,7 @@
             // 
             // detectedPictureBox
             // 
+            detectedPictureBox.BackColor = SystemColors.ActiveBorder;
             detectedPictureBox.Location = new Point(826, 37);
             detectedPictureBox.Name = "detectedPictureBox";
             detectedPictureBox.Size = new Size(628, 551);
@@ -89,7 +92,7 @@
             consoleLabel.ForeColor = SystemColors.ActiveCaptionText;
             consoleLabel.Location = new Point(1, 849);
             consoleLabel.Name = "consoleLabel";
-            consoleLabel.Size = new Size(1481, 34);
+            consoleLabel.Size = new Size(1391, 34);
             consoleLabel.TabIndex = 4;
             consoleLabel.Text = "NoOutPutInfo";
             // 
@@ -110,12 +113,24 @@
             cameraPickComboBox.Name = "cameraPickComboBox";
             cameraPickComboBox.Size = new Size(245, 32);
             cameraPickComboBox.TabIndex = 6;
+            cameraPickComboBox.SelectedIndexChanged += CameraPickComboBox_SelectedIndexChanged;
+            // 
+            // showLogButton
+            // 
+            showLogButton.Location = new Point(1388, 849);
+            showLogButton.Name = "showLogButton";
+            showLogButton.Size = new Size(96, 33);
+            showLogButton.TabIndex = 7;
+            showLogButton.Text = "显示日志";
+            showLogButton.UseVisualStyleBackColor = true;
+            showLogButton.Click += ShowLogButton_Click;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(11F, 24F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1484, 882);
+            Controls.Add(showLogButton);
             Controls.Add(cameraPickComboBox);
             Controls.Add(startCaptureButton);
             Controls.Add(consoleLabel);
@@ -142,5 +157,6 @@
         private Label consoleLabel;
         private Button startCaptureButton;
         private ComboBox cameraPickComboBox;
+        private Button showLogButton;
     }
 }
